@@ -4,6 +4,8 @@ on:
     push:
         branches:
             - main
+        # Only the image's inputs and this pipeline itself. Docs, Dependabot config and tools.go (which only
+        # exposes the modules to Dependabot; the versions the build uses come from go.mod) don't republish.
         paths:
             - 'Dockerfile'
             - 'custom-entrypoint.sh'

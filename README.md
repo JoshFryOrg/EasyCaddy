@@ -1,28 +1,58 @@
 # EasyCaddy
 
-Docker image of [Caddy](https://caddyserver.com) with the modules compiled in at build time, pushed to `docker.joshfry.uk/easycaddy:latest`.
+[Caddy](https://caddyserver.com) with these modules already built in:
 
-## Modules
+- [Cloudflare DNS](https://github.com/caddy-dns/cloudflare) (`dns.providers.cloudflare`)
+- [Cloudflare IP ranges](https://github.com/WeidiDeng/caddy-cloudflare-ip) (`http.ip_sources.cloudflare`)
+- [Combine IP ranges](https://github.com/fvbommel/caddy-combine-ip-ranges)
+- [Layer 4](https://github.com/mholt/caddy-l4) (TCP/UDP proxying)
+- [Transform encoder](https://github.com/caddyserver/transform-encoder) (log formats)
+- [CrowdSec bouncer](https://github.com/hslatman/caddy-crowdsec-bouncer)
 
-- `github.com/caddy-dns/cloudflare`
-- `github.com/WeidiDeng/caddy-cloudflare-ip`
-- `github.com/fvbommel/caddy-combine-ip-ranges`
-- `github.com/mholt/caddy-l4`
-- `github.com/caddyserver/transform-encoder`
-- `github.com/hslatman/caddy-crowdsec-bouncer`
+Nothing is downloaded when the container starts, so it boots quickly and works offline.
 
-## Startup
+## Run it
 
-The entrypoint formats `/etc/caddy/Caddyfile` (best effort, so a read-only mount is fine) and then runs Caddy. Nothing is downloaded at start, so the container no longer needs network access to boot.
+```yaml
+services:
+  caddy:
+    image: docker.joshfry.uk/easycaddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
 
-## Keeping up to date
+volumes:
+  caddy_data:
+  caddy_config:
+```
 
-Dependabot checks daily and opens PRs for:
+Put your site config in `./Caddyfile`. On start the container tidies its formatting (if the file is writable) and then runs Caddy.
 
-- **Caddy**: the `caddy:<version>-builder` and `caddy:<version>` tags in the `Dockerfile`, bumped together.
-- **Modules**: `go.mod`, whose direct requirements the `Dockerfile` passes to `xcaddy` as `--with module@version`. `tools.go` exists only so the modules appear as requirements.
-- **Workflow actions**.
+To update, pull the latest image and recreate the container:
 
-Merging any of them to `main` runs `.github/workflows/publish.yml`, which rebuilds and pushes the image from a self-hosted runner (needs the `DOCKER_PASSWORD` secret).
+```bash
+docker compose pull && docker compose up -d
+```
+
+## Local development
+
+`docker-compose.yml` in this repo builds the image from source instead of pulling it:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Then open <https://localhost> (the certificate is self-signed). Edit `Caddyfile` to try your own config, and set `CLOUDFLARE_API_TOKEN` in `.env` if it uses Cloudflare DNS.
+
+## Maintaining
+
+Dependabot opens PRs for new Caddy releases, module updates and workflow actions. Each PR is test-built, and merging it to `main` publishes a new image. To get notified, watch this repo's pull requests on GitHub, and choose *Watch > Custom > Releases* on [caddyserver/caddy](https://github.com/caddyserver/caddy).
 
 To add a module, add a blank import to `tools.go` and run `go mod tidy`.

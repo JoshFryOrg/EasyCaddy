@@ -1,0 +1,23 @@
+# Local development: builds the image from this checkout instead of pulling it from the registry.
+#   cp .env.example .env
+#   docker compose up --build
+services:
+  caddy:
+    build: .
+    image: easycaddy:local
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      # The entrypoint reformats this file on start, so edits made by the container show up in git.
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

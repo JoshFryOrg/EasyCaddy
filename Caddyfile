@@ -1,0 +1,9 @@
+# Minimal local config. Replace with your own sites.
+{
+	# Self-signed certificates only, so local runs never contact a public CA.
+	local_certs
+}
+
+localhost {
+	respond "EasyCaddy is running"
+}

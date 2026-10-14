@@ -1,0 +1,43 @@
+name: Build
+
+# Proves a PR (typically Dependabot's) still produces a working image, without pushing it. Same path filter as
+# `publish.yml`, so only changes that alter the image are built.
+on:
+    pull_request:
+        paths:
+            - 'Dockerfile'
+            - 'custom-entrypoint.sh'
+            - 'go.mod'
+            - 'go.sum'
+            - '.github/workflows/build.yml'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        # GitHub-hosted: PR builds need no registry secret, and Dependabot PRs can't read repo secrets anyway.
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Build Docker image
+              uses: docker/build-push-action@v7
+              with:
+                context: .
+                push: false
+                load: true
+                tags: easycaddy:test
+
+            - name: Check modules are compiled in
+              run: |
+                modules=$(docker run --rm --entrypoint caddy easycaddy:test list-modules)
+                for m in dns.providers.cloudflare http.ip_sources.cloudflare http.ip_sources.combine layer4 caddy.logging.encoders.transform http.handlers.crowdsec; do
+                  echo "$modules" | grep -qx "$m" || { echo "Missing module: $m"; exit 1; }
+                done
