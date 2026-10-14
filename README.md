@@ -16,7 +16,7 @@ Nothing is downloaded when the container starts, so it boots quickly and works o
 ```yaml
 services:
   caddy:
-    image: docker.joshfry.uk/easycaddy:latest
+    image: joshfryup/easycaddy:latest
     restart: unless-stopped
     ports:
       - "80:80"

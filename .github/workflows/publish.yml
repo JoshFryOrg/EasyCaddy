@@ -14,21 +14,21 @@ on:
             - '.github/workflows/publish.yml'
     workflow_dispatch:
 
-# Least privilege for the GITHUB_TOKEN: every job only checks out. The registry
+# Least privilege for the GITHUB_TOKEN: the job only checks out. The Docker Hub
 # push authenticates with DOCKER_PASSWORD, not the token.
 permissions:
     contents: read
 
 jobs:
     docker:
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
 
         env:
             DOCKERFILE_PATH: 'Dockerfile'
             DOCKERFILE_CONTEXT: '.'
             DOCKER_IMAGE_NAME: 'easycaddy'
-            DOCKER_REGISTRY: 'docker.joshfry.uk'
-            DOCKER_USERNAME: 'docker'
+            DOCKER_REGISTRY: 'joshfryup'
+            DOCKER_USERNAME: 'joshfryup'
 
         steps:
             - name: Checkout repository
@@ -40,7 +40,6 @@ jobs:
             - name: Log in to Docker Registry
               uses: docker/login-action@v4
               with:
-                registry: ${{ env.DOCKER_REGISTRY }}
                 username: ${{ env.DOCKER_USERNAME }}
                 password: ${{ secrets.DOCKER_PASSWORD }}
 
@@ -52,11 +51,3 @@ jobs:
                 push: true
                 tags: |
                   ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-
-    cleanup:
-        runs-on: self-hosted
-        needs: [docker]
-
-        steps:
-            - name: Prune Build Images
-              run: docker image prune --all --force
