@@ -1,0 +1,7 @@
+# Dependabot's `github-actions` updater matches `uses:` declarations with an LF-only pattern, so a CRLF
+# workflow file makes an otherwise valid bump fail with `No files changed!`. The entrypoint runs under Linux
+# `sh`, where a CRLF shebang line fails to execute.
+.github/workflows/*.yml text eol=lf
+.github/workflows/*.yaml text eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf

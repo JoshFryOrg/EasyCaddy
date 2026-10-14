@@ -1,0 +1,58 @@
+# Dependabot keeps the Caddy version and the workflow actions moving, so a bump is a pull request to read rather
+# than a floating tag silently changing under the image.
+#
+# Every entry runs daily at 06:00 Europe/London with no cooldown. Merging a Dependabot PR to `main` triggers
+# `publish.yml`, which rebuilds and pushes the image. This file is read from the default branch only.
+version: 2
+
+updates:
+  # `.github/workflows/`. Workflow files must stay LF (see `.gitattributes`).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/London"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    cooldown:
+      default-days: 0
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # `go.mod` + `tools.go`: the Caddy modules compiled into the image. The Dockerfile reads their versions from
+  # `go.mod`, so a bump here changes the built image. Adding a module means editing `tools.go` and running
+  # `go mod tidy`, not just the Dockerfile.
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/London"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    cooldown:
+      default-days: 0
+
+  # `Dockerfile`: `caddy:<version>-builder` and `caddy:<version>`. Both tags are pinned to a readable version,
+  # which is what lets this entry propose anything; a floating tag would opt the image out.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/London"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    cooldown:
+      default-days: 0
+    groups:
+      # The builder and runtime stages must stay on the same Caddy version, so they move in one PR.
+      caddy:
+        patterns:
+          - "caddy"
