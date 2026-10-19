@@ -34,8 +34,21 @@ jobs:
 
             - name: Check modules are compiled in
               run: |
-                modules=$(docker run --rm --entrypoint caddy easycaddy:test list-modules)
+                modules=$(docker run --rm easycaddy:test caddy list-modules)
                 for m in dns.providers.cloudflare http.ip_sources.cloudflare http.ip_sources.combine layer4 caddy.logging.encoders.transform http.handlers.crowdsec http.handlers.waf http.handlers.rate_limit http.handlers.oidc; do
                   echo "$modules" | grep -qx "$m" || { echo "Missing module: $m"; exit 1; }
                 done
-                docker run --rm --entrypoint test easycaddy:test -f /usr/share/easycaddy/coraza/selfhosted.conf && docker run --rm --entrypoint test easycaddy:test -f /usr/share/easycaddy/waf.caddy
+
+            - name: Check the WAF loads
+              run: |
+                # Provisioning loads the Core Rule Set, so a missing or broken rule file fails here.
+                printf 'import /usr/share/easycaddy/waf.caddy\n:8080 {\n\troute {\n\t\tinvoke waf\n\t\trespond ok\n\t}\n}\n' \
+                  > "$RUNNER_TEMP/Caddyfile"
+                docker run --rm -e EASYCADDY_WAF_MODE=On -v "$RUNNER_TEMP/Caddyfile:/etc/caddy/Caddyfile:ro" \
+                  easycaddy:test caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+            - name: Check the image has no shell
+              run: |
+                if docker run --rm --entrypoint sh easycaddy:test -c true 2>/dev/null; then
+                  echo "The image has a shell; it should hold only Caddy"; exit 1
+                fi
