@@ -1,0 +1,50 @@
+# EasyCaddy's WAF, as named routes. Import this file once in your Caddyfile, after the global options:
+#
+#   import /usr/share/easycaddy/waf.caddy
+#
+# then put `invoke waf` in each site's route. It blocks nothing until EASYCADDY_WAF_MODE is set to On (or
+# DetectionOnly) in the container's environment: the WAF is opt-in. A named route is built once and shared by every
+# site that invokes it, so the Rule Set is in memory once however many sites use it. The container's environment configures it (README.md,
+# "Web application firewall"); each {$VAR:default} is read when Caddy loads the config.
+
+&(waf) {
+	# coraza_waf has no place in Caddy's directive order, so it needs a route, which keeps the order written.
+	route {
+		coraza_waf {
+			directives `
+				Include /usr/share/easycaddy/coraza/coraza.conf
+				SecRuleEngine {$EASYCADDY_WAF_MODE:Off}
+				SecRequestBodyLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecRequestBodyInMemoryLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecRequestBodyNoFilesLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecAction "id:900000,phase:1,pass,t:none,nolog,setvar:tx.blocking_paranoia_level={$EASYCADDY_WAF_PARANOIA:1}"
+				SecAction "id:900110,phase:1,pass,t:none,nolog,setvar:tx.inbound_anomaly_score_threshold={$EASYCADDY_WAF_ANOMALY_THRESHOLD:5}"
+				Include /usr/share/easycaddy/coraza/{$EASYCADDY_WAF_PROFILE:selfhosted}.conf
+				Include /usr/share/easycaddy/coraza/crs/crs-setup.conf
+				Include /usr/share/easycaddy/coraza/crs/rules/*.conf
+				{$EASYCADDY_WAF_DIRECTIVES}
+			`
+		}
+	}
+}
+
+# The same rules, logging matches without blocking whatever EASYCADDY_WAF_MODE says: for trying a new app.
+&(waf_detect) {
+	route {
+		coraza_waf {
+			directives `
+				Include /usr/share/easycaddy/coraza/coraza.conf
+				SecRuleEngine DetectionOnly
+				SecRequestBodyLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecRequestBodyInMemoryLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecRequestBodyNoFilesLimit {$EASYCADDY_WAF_BODY_INSPECT_BYTES:1048576}
+				SecAction "id:900000,phase:1,pass,t:none,nolog,setvar:tx.blocking_paranoia_level={$EASYCADDY_WAF_PARANOIA:1}"
+				SecAction "id:900110,phase:1,pass,t:none,nolog,setvar:tx.inbound_anomaly_score_threshold={$EASYCADDY_WAF_ANOMALY_THRESHOLD:5}"
+				Include /usr/share/easycaddy/coraza/{$EASYCADDY_WAF_PROFILE:selfhosted}.conf
+				Include /usr/share/easycaddy/coraza/crs/crs-setup.conf
+				Include /usr/share/easycaddy/coraza/crs/rules/*.conf
+				{$EASYCADDY_WAF_DIRECTIVES}
+			`
+		}
+	}
+}

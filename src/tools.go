@@ -8,7 +8,10 @@ import (
 	_ "github.com/WeidiDeng/caddy-cloudflare-ip"
 	_ "github.com/caddy-dns/cloudflare"
 	_ "github.com/caddyserver/transform-encoder"
+	_ "github.com/corazawaf/coraza-caddy/v2"
 	_ "github.com/fvbommel/caddy-combine-ip-ranges"
 	_ "github.com/hslatman/caddy-crowdsec-bouncer"
 	_ "github.com/mholt/caddy-l4"
+	_ "github.com/mholt/caddy-ratelimit"
+	_ "github.com/relvacode/caddy-oidc"
 )

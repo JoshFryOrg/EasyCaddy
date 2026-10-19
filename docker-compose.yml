@@ -3,15 +3,21 @@
 #   docker compose up --build
 services:
   caddy:
-    build: .
+    build: ./src
     image: easycaddy:local
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
       - "${HTTPS_PORT:-443}:443/udp"
+    # Passed only when set in .env, so an unset one keeps waf.caddy's default.
     environment:
-      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      - EASYCADDY_WAF_MODE
+      - EASYCADDY_WAF_PROFILE
+      - EASYCADDY_WAF_PARANOIA
+      - EASYCADDY_WAF_ANOMALY_THRESHOLD
+      - EASYCADDY_WAF_BODY_INSPECT_BYTES
+      - EASYCADDY_WAF_DIRECTIVES
     volumes:
       # The entrypoint reformats this file on start, so edits made by the container show up in git.
       - ./Caddyfile:/etc/caddy/Caddyfile
