@@ -4,8 +4,8 @@
 #
 # then put `invoke waf` in each site's route. It blocks nothing until EASYCADDY_WAF_MODE is set to On (or
 # DetectionOnly) in the container's environment: the WAF is opt-in. A named route is built once and shared by every
-# site that invokes it, so the Rule Set is in memory once however many sites use it. The container's environment configures it (README.md,
-# "Web application firewall"); each {$VAR:default} is read when Caddy loads the config.
+# site that invokes it, so the Rule Set is in memory once however many sites use it. The settings are explained in
+# .env.example and docs/waf.md; each {$VAR:default} is read when Caddy loads the config.
 
 &(waf) {
 	# coraza_waf has no place in Caddy's directive order, so it needs a route, which keeps the order written.
