@@ -1,15 +1,12 @@
 # EasyCaddy
 
-[Caddy](https://caddyserver.com) with these modules already built in:
+[Caddy](https://caddyserver.com) with these modules built in, so nothing is downloaded at start:
 
-- [Cloudflare DNS](https://github.com/caddy-dns/cloudflare) (`dns.providers.cloudflare`)
-- [Cloudflare IP ranges](https://github.com/WeidiDeng/caddy-cloudflare-ip) (`http.ip_sources.cloudflare`)
-- [Combine IP ranges](https://github.com/fvbommel/caddy-combine-ip-ranges)
-- [Layer 4](https://github.com/mholt/caddy-l4) (TCP/UDP proxying)
-- [Transform encoder](https://github.com/caddyserver/transform-encoder) (log formats)
-- [CrowdSec bouncer](https://github.com/hslatman/caddy-crowdsec-bouncer)
-
-Nothing is downloaded when the container starts, so it boots quickly and works offline.
+- [Cloudflare DNS](https://github.com/caddy-dns/cloudflare) and [IP ranges](https://github.com/WeidiDeng/caddy-cloudflare-ip), [combined IP ranges](https://github.com/fvbommel/caddy-combine-ip-ranges)
+- [CrowdSec bouncer](https://github.com/hslatman/caddy-crowdsec-bouncer) (`crowdsec`, `appsec`)
+- [Coraza WAF](https://github.com/corazawaf/coraza-caddy) with the [OWASP Core Rule Set](https://coreruleset.org), opt-in
+- [OIDC sign-in](https://github.com/relvacode/caddy-oidc) (`oidc`): Authentik, Keycloak, Entra ID or any OpenID Connect provider
+- [Rate limit](https://github.com/mholt/caddy-ratelimit), [Layer 4](https://github.com/mholt/caddy-l4), [transform encoder](https://github.com/caddyserver/transform-encoder)
 
 ## Run it
 
@@ -22,6 +19,7 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    env_file: .env # the WAF's settings; copy .env.example
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -32,27 +30,26 @@ volumes:
   caddy_config:
 ```
 
-Put your site config in `./Caddyfile`. On start the container tidies its formatting (if the file is writable) and then runs Caddy.
+Bring your own `Caddyfile` (below) and a `.env` copied from [`.env.example`](.env.example). To update:
+`docker compose pull && docker compose up -d`.
 
-To update, pull the latest image and recreate the container:
+## Your Caddyfile
 
-```bash
-docker compose pull && docker compose up -d
+EasyCaddy ships no site config. A minimal one:
+
+```caddyfile
+app.example.com {
+	reverse_proxy 10.0.0.10:3000
+}
 ```
 
-## Local development
+## Docs
 
-`docker-compose.yml` in this repo builds the image from source instead of pulling it:
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Then open <https://localhost> (the certificate is self-signed). Edit `Caddyfile` to try your own config, and set `CLOUDFLARE_API_TOKEN` in `.env` if it uses Cloudflare DNS.
-
-## Maintaining
-
-Dependabot opens PRs for new Caddy releases, module updates and workflow actions. Each PR is test-built, and merging it to `main` publishes a new image. To get notified, watch this repo's pull requests on GitHub, and choose *Watch > Custom > Releases* on [caddyserver/caddy](https://github.com/caddyserver/caddy).
-
-To add a module, add a blank import to `tools.go` and run `go mod tidy`.
+- [Writing your Caddyfile](docs/caddyfile.md): one example using every module (CrowdSec, WAF, OIDC, rate limits, a
+  registry, Plex)
+- [Web application firewall](docs/waf.md): opting in, and what it costs under heavy traffic; its settings are explained
+  in [`.env.example`](.env.example)
+- [Sign-in (OIDC)](docs/oidc.md): signing visitors in at Caddy, with Authentik
+- [Large files](docs/large-files.md): uploads and downloads of 1 TB and more
+- [CrowdSec allowlists](docs/crowdsec.md): stopping apps' normal traffic getting users banned
+- [Development](docs/development.md): building locally and maintaining the image

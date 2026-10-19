@@ -23,11 +23,11 @@ updates:
         patterns:
           - "*"
 
-  # `go.mod` + `tools.go`: the Caddy modules compiled into the image. The Dockerfile reads their versions from
+  # `src/go.mod` + `src/tools.go`: the Caddy modules compiled into the image. The Dockerfile reads their versions from
   # `go.mod`, so a bump here changes the built image. Adding a module means editing `tools.go` and running
   # `go mod tidy`, not just the Dockerfile.
   - package-ecosystem: "gomod"
-    directory: "/"
+    directory: "/src"
     schedule:
       interval: "daily"
       time: "06:00"
@@ -38,10 +38,10 @@ updates:
     cooldown:
       default-days: 0
 
-  # `Dockerfile`: `caddy:<version>-builder` and `caddy:<version>`. Both tags are pinned to a readable version,
+  # `src/Dockerfile`: `caddy:<version>-builder` and `caddy:<version>`. Both tags are pinned to a readable version,
   # which is what lets this entry propose anything; a floating tag would opt the image out.
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/src"
     schedule:
       interval: "daily"
       time: "06:00"

@@ -1,0 +1,79 @@
+name: CRS Watch
+
+# The OWASP Core Rule Set is pinned by hand in src/Dockerfile (CRS_VERSION and CRS_SHA256), as Dependabot can't move a
+# release tarball. This checks the pin against the latest CRS release every day and, when it's behind, opens one issue
+# (or updates it) with the two lines to paste, checksum included. The run also fails, so it shows red in Actions.
+on:
+    schedule:
+        - cron: '0 6 * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    issues: write
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Compare the pin with the latest release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  set -euo pipefail
+
+                  # The pin, read through the API so the job needs no checkout.
+                  dockerfile=$(gh api "repos/$REPO/contents/src/Dockerfile" --jq .content | base64 -d)
+                  pinned=$(printf '%s\n' "$dockerfile" | sed -n 's/^ARG CRS_VERSION=//p')
+                  [ -n "$pinned" ] || { echo "::error::No ARG CRS_VERSION in src/Dockerfile"; exit 1; }
+
+                  # GitHub's "latest" release skips drafts and pre-releases.
+                  latest=$(gh api repos/coreruleset/coreruleset/releases/latest --jq .tag_name)
+                  latest=${latest#v}
+                  echo "Pinned: $pinned  Latest: $latest"
+
+                  newest=$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -1)
+                  if [ "$pinned" = "$latest" ] || [ "$newest" = "$pinned" ]; then
+                      echo "CRS pin is current."
+                      exit 0
+                  fi
+
+                  url="https://github.com/coreruleset/coreruleset/releases/download/v${latest}/coreruleset-${latest}-minimal.tar.gz"
+                  sha=$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)
+
+                  title="OWASP Core Rule Set ${latest} is out (pinned: ${pinned})"
+                  body=$(cat <<EOF
+                  The Core Rule Set pinned in \`src/Dockerfile\` is behind the latest release.
+
+                  - Pinned: ${pinned}
+                  - Latest: [v${latest}](https://github.com/coreruleset/coreruleset/releases/tag/v${latest})
+
+                  Replace the two \`ARG\` lines in \`src/Dockerfile\` with:
+
+                  \`\`\`dockerfile
+                  ARG CRS_VERSION=${latest}
+                  ARG CRS_SHA256=${sha}
+                  \`\`\`
+
+                  The checksum is of \`coreruleset-${latest}-minimal.tar.gz\`, downloaded by this run. Read the release
+                  notes for rule changes that could block traffic the WAF let through before, then open a pull request:
+                  the Build workflow proves the image still builds.
+
+                  Opened by the CRS Watch workflow, which closes nothing itself: close this once the pin is moved.
+                  EOF
+                  )
+
+                  # One open issue at a time: update it if a run already opened one.
+                  existing=$(gh issue list --repo "$REPO" --state open --search "in:title \"OWASP Core Rule Set\" \"is out\"" \
+                      --json number --jq '.[0].number // empty')
+                  if [ -n "$existing" ]; then
+                      gh issue edit "$existing" --repo "$REPO" --title "$title" --body "$body"
+                      echo "Updated issue #$existing"
+                  else
+                      gh issue create --repo "$REPO" --title "$title" --body "$body"
+                  fi
+
+                  echo "::error::CRS pin ${pinned} is behind the latest release ${latest}"
+                  exit 1
