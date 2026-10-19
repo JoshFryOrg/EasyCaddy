@@ -154,8 +154,8 @@ What it costs under heavy traffic:
 
 - **Uploads**: at most `EASYCADDY_WAF_BODY_INSPECT_BYTES` of each request body is held while it's inspected; the rest
   streams to the app as it arrives. A 50 GB upload costs 1 MiB, not 50 GB.
-- **Downloads and streams**: responses are never inspected or buffered, so large downloads, Range requests, Plex
-  streams, server-sent events and websockets pass straight through.
+- **Downloads and streams**: responses are never inspected or buffered, so downloads of any size (1 TB and more),
+  Range requests, Plex streams, server-sent events and websockets pass straight through.
 - **Memory**: about 50 MiB for Caddy with the Rule Set loaded, measured at about 120 MiB peak while moving 2 GB
   uploads and downloads through it.
 - **CPU**: the rules run once per request, on its URL, headers and the inspected part of its body. Leave the WAF off
@@ -202,6 +202,17 @@ files.example.com {
 	}
 }
 ```
+
+Very large files (hundreds of GB to over 1 TB) need nothing extra from Caddy or the WAF: a download streams through
+at constant memory (measured flat at under 80 MiB across a 30 GB download through the WAF, at about 430 MB/s), and an
+interrupted download resumes with a Range request. What does matter:
+
+- Keep `write 0` (and `read_body 0` for uploads) in the `timeouts` global option, so a transfer that takes hours isn't
+  cut off.
+- Don't put `encode` (gzip, zstd) on these sites: compressing already-compressed files costs CPU for nothing, and a
+  compressed response can't be resumed with a Range request.
+- Behind Cloudflare, use a DNS-only (grey cloud) record for these sites. Cloudflare's proxy caps upload size by plan
+  (100 MB on Free) and its terms limit serving large non-web files through it.
 
 If an app's uploads still trip the WAF (some upload protocols send binary in a form field), skip the WAF on those
 paths only:
@@ -443,5 +454,5 @@ Dependabot opens PRs for new Caddy releases, module updates and workflow actions
 To add a module, add a blank import to `src/tools.go` and run `go mod tidy` in `src/`.
 
 The OWASP Core Rule Set is pinned by hand (`CRS_VERSION` and `CRS_SHA256` in `src/Dockerfile`), as Dependabot can't
-move a release tarball. Watch [coreruleset/coreruleset](https://github.com/coreruleset/coreruleset) releases and bump
-both together.
+move a release tarball. The CRS Watch workflow checks the pin daily and, when a newer release is out, opens an issue
+with the two replacement lines, checksum included.
