@@ -1,6 +1,6 @@
 # All three caddy stages are pinned to the same readable Caddy version so Dependabot's `docker` updater can bump them
 # together. The builder compiles the custom binary; the stock image is read only for its files.
-FROM caddy:2.11.7-builder AS builder
+FROM caddy:2.11.8-builder AS builder
 
 # Module versions come from `go.mod`, which Dependabot's `gomod` updater keeps current (see `tools.go`). Only direct
 # requirements are compiled in; `// indirect` lines are their dependencies. The binary is stripped and path-free, like
@@ -39,7 +39,7 @@ RUN mkdir -p /root-out/data/caddy /root-out/config/caddy /root-out/etc/caddy /ro
  && chmod 1777 /root-out/tmp
 
 # The stock image, read for its runtime files alone: the default Caddyfile and page, CA certificates and mime types.
-FROM caddy:2.11.7 AS stock
+FROM caddy:2.11.8 AS stock
 
 # Nothing but Caddy, its entrypoint and their files: no shell, package manager or other programs, so nothing an
 # attacker who took over Caddy could use, and nothing for a vulnerability scanner to flag. Caddy is a static Go binary.
