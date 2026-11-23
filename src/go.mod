@@ -11,7 +11,7 @@ require (
 	github.com/hslatman/caddy-crowdsec-bouncer v0.15.0
 	github.com/mholt/caddy-l4 v0.1.3
 	github.com/mholt/caddy-ratelimit v0.1.1-0.20260612195517-5625512f24f6
-	github.com/relvacode/caddy-oidc v0.4.4
+	github.com/relvacode/caddy-oidc v0.4.5
 )
 
 require (
