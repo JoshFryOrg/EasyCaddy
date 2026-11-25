@@ -20,8 +20,8 @@ RUN cd /src/entrypoint && CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o /
 # The OWASP Core Rule Set for Coraza, a hand pin: no Dependabot ecosystem moves a release tarball, so bump both ARGs
 # together (the CRS Watch workflow opens an issue with them). The checksum is of the `-minimal` tarball, so a moved or
 # tampered release stops the build. Only the rules, their data files, the setup file and the licence are kept.
-ARG CRS_VERSION=4.30.0
-ARG CRS_SHA256=3d678a41fd5aade34760127fef5dd64fd7a77848913fc0f70dde0cf467c94427
+ARG CRS_VERSION=4.31.0
+ARG CRS_SHA256=70e8c32ea5b57962a9081c74b738a498dcd299b1fc32099de6444b8ca5cdd8f5
 RUN set -eu; \
     wget -q -O /tmp/crs.tar.gz \
       "https://github.com/coreruleset/coreruleset/releases/download/v${CRS_VERSION}/coreruleset-${CRS_VERSION}-minimal.tar.gz"; \
