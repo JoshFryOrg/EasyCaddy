@@ -8,7 +8,7 @@ require (
 	github.com/caddyserver/transform-encoder v0.0.0-20260423033309-ba4124974830
 	github.com/corazawaf/coraza-caddy/v2 v2.6.2
 	github.com/fvbommel/caddy-combine-ip-ranges v0.0.1
-	github.com/hslatman/caddy-crowdsec-bouncer v0.15.0
+	github.com/hslatman/caddy-crowdsec-bouncer v0.15.1
 	github.com/mholt/caddy-l4 v0.1.3
 	github.com/mholt/caddy-ratelimit v0.1.1-0.20260612195517-5625512f24f6
 	github.com/relvacode/caddy-oidc v0.4.5
